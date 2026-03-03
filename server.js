@@ -34,18 +34,21 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         const zip = new admZip(zipPath);
         zip.extractAllTo(extractPath, true);
 
-        console.log('🚀 Đang khởi tạo Git và đẩy lên GitHub Repo Teicloud...');
+console.log('🚀 Đang khởi tạo Git và đẩy lên GitHub Repo Teicloud...');
         const git = simpleGit(extractPath);
         
-        // Các lệnh Git tự động
         await git.init();
         await git.addConfig('user.name', 'TeiCloud System');
         await git.addConfig('user.email', 'bot@teicloud.com');
         await git.addRemote('origin', remoteUrl);
+        
+        // DÒNG CODE MỚI THÊM VÀO: Ép Git ở local chuyển sang nhánh production trước khi commit
+        await git.checkoutLocalBranch('production');
+
         await git.add('.');
         await git.commit(`Tự động Deploy lúc: ${new Date().toLocaleString()}`);
         
-        // Push đè (force) để GitHub thay thế hoàn toàn code cũ bằng code mới
+        // Push đè code lên nhánh production của GitHub
         await git.push('origin', 'production', {'--force': null});
 
         console.log('✅ Đã đẩy code thành công lên GitHub!');
