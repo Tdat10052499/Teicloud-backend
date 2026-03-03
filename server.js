@@ -46,7 +46,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         await git.commit(`Tự động Deploy lúc: ${new Date().toLocaleString()}`);
         
         // Push đè (force) để GitHub thay thế hoàn toàn code cũ bằng code mới
-        await git.push('origin', 'main', {'--force': null});
+        await git.push('origin', 'production', {'--force': null});
 
         console.log('✅ Đã đẩy code thành công lên GitHub!');
         res.status(200).send({ 
