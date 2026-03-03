@@ -25,35 +25,58 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     const zipPath = req.file.path;
     const extractPath = path.join(__dirname, 'temp_workspace');
 
-    try {
+try {
         console.log('📦 Đang giải nén code từ CLI...');
-        // Dọn dẹp không gian làm việc cũ (nếu có)
         if (fs.existsSync(extractPath)) fs.removeSync(extractPath);
         
-        // Giải nén file Zip
         const zip = new admZip(zipPath);
         zip.extractAllTo(extractPath, true);
 
-console.log('🚀 Đang khởi tạo Git và đẩy lên GitHub Repo Teicloud...');
+        // --- BẮT ĐẦU ĐOẠN CODE AUTO-INJECT MỚI ---
+        console.log('⚙️ Đang tự động tiêm cấu hình GitHub Actions...');
+        const githubDir = path.join(extractPath, '.github', 'workflows');
+        fs.ensureDirSync(githubDir); // Tạo thư mục .github/workflows nếu chưa có
+
+        // Viết thẳng file deploy chuẩn cho Web tĩnh vào thư mục code
+        const workflowContent = 
+`name: Deploy Static Website
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: \${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy . --project-name=teicloud-demo`;
+
+        fs.writeFileSync(path.join(githubDir, 'deploy.yml'), workflowContent);
+        // --- KẾT THÚC ĐOẠN CODE AUTO-INJECT ---
+
+        console.log('🚀 Đang khởi tạo Git và đẩy lên GitHub Repo Teicloud...');
         const git = simpleGit(extractPath);
         
         await git.init();
         await git.addConfig('user.name', 'TeiCloud System');
         await git.addConfig('user.email', 'bot@teicloud.com');
         await git.addRemote('origin', remoteUrl);
-        
-        // DÒNG CODE MỚI THÊM VÀO: Ép Git ở local chuyển sang nhánh production trước khi commit
-        await git.checkoutLocalBranch('production');
-
+        await git.checkoutLocalBranch('production'); // Đảm bảo ở đúng nhánh production
         await git.add('.');
         await git.commit(`Tự động Deploy lúc: ${new Date().toLocaleString()}`);
         
-        // Push đè code lên nhánh production của GitHub
         await git.push('origin', 'production', {'--force': null});
 
         console.log('✅ Đã đẩy code thành công lên GitHub!');
         res.status(200).send({ 
-            message: 'Deploy thành công! TeiCloud đang tiến hành build website của bạn.',
+            message: 'Deploy thành công! TeiCloud đang tiến hành build website.',
             github_url: `https://github.com/${GITHUB_USERNAME}/${GITHUB_REPO}/actions`
         });
 
