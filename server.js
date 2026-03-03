@@ -53,12 +53,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        
+      - name: Auto-create Cloudflare Project (if not exists)
+        run: |
+          curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/\${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/pages/projects" \\
+               -H "Authorization: Bearer \${{ secrets.CLOUDFLARE_API_TOKEN }}" \\
+               -H "Content-Type: application/json" \\
+               -d '{"name":"${projectName}","production_branch":"production"}'
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: \${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy . --project-name=${projectName}`; 
+          command: pages deploy . --project-name=${projectName}`;
           //Chú ý dòng trên cùng: Tên project đã trở thành biến động!
 
         fs.writeFileSync(path.join(githubDir, 'deploy.yml'), workflowContent);
