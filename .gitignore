@@ -1,0 +1,9 @@
+# Bỏ qua thư mục chứa các thư viện nặng
+node_modules/
+
+# CỰC KỲ QUAN TRỌNG: Bỏ qua file chứa Token bảo mật
+.env
+
+# Bỏ qua các thư mục tạm thời dùng để giải nén code
+uploads/
+temp_workspace/
